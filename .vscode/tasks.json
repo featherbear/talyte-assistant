@@ -1,0 +1,30 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C++: Build",
+			"command": "g++",
+			"args": [
+				"-g",
+				"src/client.cpp",
+				"-I./libs/websocketpp",
+				"-I./libs/boost",
+				"-lwsock32",
+				"-lgdi32",
+				"-lws2_32",
+				// "-lboost_thread",
+				"-o",
+				"build/talyte-assistant.exe"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "compiler: g++"
+		}
+	]
+}
