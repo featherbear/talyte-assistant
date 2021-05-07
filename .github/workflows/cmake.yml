@@ -17,7 +17,12 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Configure CMake
+    - name: Configure CMake (Windows)
+      if: ${{ matrix.os == 'windows' }}
+      run: cmake . -G "MSYS Makefiles"
+
+    - name: Configure CMake (*nix)
+      if: ${{ matrix.os != 'windows' }}
       run: cmake .
 
     - name: Build
