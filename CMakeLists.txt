@@ -13,6 +13,7 @@ add_executable(talyte-assistant src/client.cpp)
 
 target_include_directories(talyte-assistant PUBLIC "./libs/websocketpp")
 target_include_directories(talyte-assistant PUBLIC "./libs/asio/asio/include")
+target_include_directories(talyte-assistant PUBLIC "./libs/rapidjson/include")
 
 if (WIN32)
     target_include_directories(talyte-assistant PUBLIC "./libs/mingw-std-threads")
