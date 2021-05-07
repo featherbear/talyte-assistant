@@ -9,11 +9,11 @@
 				"-g",
 				"src/client.cpp",
 				"-I./libs/websocketpp",
-				"-I./libs/boost",
+				"-I./libs/mingw-std-threads",
+				"-I./libs/asio/asio/include",
 				"-lwsock32",
 				"-lgdi32",
 				"-lws2_32",
-				// "-lboost_thread",
 				"-o",
 				"build/talyte-assistant.exe"
 			],
