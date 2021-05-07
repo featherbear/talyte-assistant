@@ -1,0 +1,29 @@
+name: CMake
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+        fail-fast: false
+        matrix:
+            os: [ubuntu, windows, macOS]
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      run: cmake .
+
+    - name: Build
+      run: cmake --build .
+
+    - uses: actions/upload-artifact@58740802ef971a2d71eff71e63d48ab68d1f5507
+      with:
+        name: artifact-${{ matrix.os }}
+        path: build/talyte-assistant*
