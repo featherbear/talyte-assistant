@@ -18,9 +18,6 @@ std::string _getVersionRequestJSONString() {
     return std::string(message.GetString());
 }
 
-// TODO: REMOVE
-#include <iostream>
-
 /**
  * Generate JSON for an auth required check
  */
@@ -31,10 +28,8 @@ std::string _getAuthRequiredJSONString() {
     d.AddMember("request-type", _AuthRequiredString, allocation);
     d.AddMember("message-id", _AuthRequiredString, allocation);
     rapidjson::StringBuffer message;
-
     rapidjson::Writer<rapidjson::StringBuffer> writer(message);
     d.Accept(writer);
-    std::cout << "Generated " << message.GetString() << std::endl;
     return std::string(message.GetString());
 }
 
@@ -55,8 +50,6 @@ std::string __generateAuthResponse(const char* password, const char* challenge, 
     return ___encHash(___encHash(password, salt).c_str(), challenge);
 }
 
-#define _AuthenticateString "Authenticate"
-
 /**
  * Generate JSON for an auth request
  */
@@ -67,10 +60,8 @@ std::string _generateAuthJSONString(const char* password, const char* challenge,
     d.AddMember("auth", __generateAuthResponse(password, challenge, salt), allocation);
     d.AddMember("message-id", _AuthenticateString, allocation);
     d.AddMember("request-type", _AuthenticateString, allocation);
-
     rapidjson::StringBuffer message;
     rapidjson::Writer<rapidjson::StringBuffer> writer(message);
     d.Accept(writer);
-    std::cout << message.GetString() << std::endl;
     return std::string(message.GetString());
 }

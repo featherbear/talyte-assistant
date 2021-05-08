@@ -11,3 +11,4 @@ std::string _generateAuthJSONString(const char* password, const char* challenge,
 
 #define _GetVersionString "GetVersion"
 #define _AuthRequiredString "GetAuthRequired"
+#define _AuthenticateString "Authenticate"
