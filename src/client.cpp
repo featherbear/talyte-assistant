@@ -45,17 +45,17 @@ void on_client_disconnect(ServerType* s, websocketpp::connection_hdl hdl) {
     std::cout << "disconnect:" << hdl.lock() << std::endl;
 
     connections_mutex.lock();
-    
+
     bool found = false;
     unsigned int i = 0;
     auto target_ptr = hdl.lock();
-    
+
     for (auto conn_wptr : connections) {
         if (conn_wptr.lock() == target_ptr) {
             found = true;
             break;
         }
-        
+
         i++;
     }
 
@@ -137,56 +137,56 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
 }
 
 int main() {
+    // TODO: Variable uri
     std::string uri = "ws://localhost:4444";
 
+    // Shared async IO service
     asio::io_service async_service;
-    asio::io_service::work work(async_service);
 
     try {
-        // set logging policy if needed
-        c.clear_access_channels(websocketpp::log::alevel::frame_header);
-        c.clear_access_channels(websocketpp::log::alevel::frame_payload);
-        //c.set_error_channels(websocketpp::log::elevel::none);
+        c.set_access_channels(websocketpp::log::alevel::connect | websocketpp::log::alevel::disconnect);
+        // c.set_error_channels(websocketpp::log::elevel::none);
 
-        // Initialize ASIO`
         c.init_asio(&async_service);
-
-        // Register our handlers
         c.set_open_handler(websocketpp::lib::bind(&on_open, &c, std::placeholders::_1));
         c.set_message_handler(websocketpp::lib::bind(&on_message, &c, std::placeholders::_1, std::placeholders::_2));
-        // c.set_fail_handler(bind(&on_fail, &c, ::_1));
-        // c.set_close_handler(bind(&on_close, &c, ::_1));
 
-        // Create a connection to the given URI and queue it for connection once the event loop starts
+        // TODO: Reconnect
+        // c.set_close_handler(bind(&on_close, &c, ::_1));
+        // c.set_fail_handler(bind(&on_fail, &c, ::_1));
+
         websocketpp::lib::error_code ec;
         ClientType::connection_ptr con = c.get_connection(uri, ec);
         c.connect(con);
 
     } catch (websocketpp::lib::error_code e) {
-        std::cout << "M" << e.message() << std::endl;
+        std::cout << "Client: " << e.message() << std::endl;
     } catch (const std::exception& e) {
-        std::cout << "E" << e.what() << std::endl;
+        std::cout << "Client: " << e.what() << std::endl;
     } catch (...) {
-        std::cout << "other exception" << std::endl;
+        std::cout << "other client exception" << std::endl;
     }
 
     try {
-        s.clear_access_channels(websocketpp::log::alevel::frame_header);
-        s.clear_access_channels(websocketpp::log::alevel::frame_payload);
+        s.set_access_channels(websocketpp::log::alevel::connect | websocketpp::log::alevel::disconnect);
+        s.set_error_channels(websocketpp::log::elevel::none);
+
         s.init_asio(&async_service);
         s.set_open_handler(websocketpp::lib::bind(&on_client_connect, &s, std::placeholders::_1));
         s.set_close_handler(websocketpp::lib::bind(&on_client_disconnect, &s, std::placeholders::_1));
-        s.listen(4443);
-        s.start_accept();
 
-        async_service.run();
-        std::cout << " Run service \n";
+        // TODO: Variable port number
+        s.listen(4443);
+
+        s.start_accept();
     } catch (websocketpp::lib::error_code e) {
-        std::cout << "S:M" << e.message() << std::endl;
+        std::cout << "Server: " << e.message() << std::endl;
     } catch (const std::exception& e) {
-        std::cout << "S:E" << e.what() << std::endl;
+        std::cout << "Server: " << e.what() << std::endl;
     } catch (...) {
-        std::cout << "S:other exception" << std::endl;
+        std::cout << "other server exception" << std::endl;
     }
+
+    async_service.run();
     return 0;
 }
