@@ -2,9 +2,9 @@
 #define _WEBSOCKETPP_MINGW_THREAD_
 #endif
 
-#define CLIENT_SPACE 50
-
 #define ASIO_STANDALONE
+
+#define CLIENT_SPACE 50
 
 #include <functional>
 #include <mutex>
@@ -27,14 +27,12 @@ void on_open(ClientType* c, websocketpp::connection_hdl hdl) {
 }
 
 std::mutex connections_mutex;
-std::vector<websocketpp::connection_hdl> connections(CLIENT_SPACE);
+std::vector<websocketpp::connection_hdl> connections;
 
 void on_client_connect(ServerType* s, websocketpp::connection_hdl hdl) {
     connections_mutex.lock();
-
-    // Create space for another CLIENT_SPACE number of clients
-    if (connections.size() == connections.max_size()) {
-        connections.resize(connections.size() + CLIENT_SPACE);
+    if (connections.size() == connections.capacity()) {
+        connections.reserve(connections.size() + CLIENT_SPACE);
     };
 
     connections.push_back(hdl);
