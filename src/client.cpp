@@ -18,19 +18,15 @@ typedef websocketpp::client<websocketpp::config::asio> ServerType;
 typedef websocketpp::config::asio_client::message_type::ptr messagePtr;
 
 bool versionCheckDone = false;
-bool authRequiredCheckDone = false;
-bool authRequired = true;
-bool authDone = false;
 
 void on_open(ClientType* c, websocketpp::connection_hdl hdl) {
+    // Check server is the right protocol
     c->send(hdl, _getVersionRequestJSONString(), websocketpp::frame::opcode::text);
 }
 
 void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) {
     // Read payload as JSON
     std::string payload = msg->get_payload();
-    std::cout << "Payload:" << payload << std::endl;
-
     rapidjson::Document d;
     d.Parse(payload.c_str());
 
@@ -41,16 +37,34 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
     if (d.HasMember("message-id")) {
         std::string messageId(d["message-id"].GetString());
 
-        // Client response
-        if (!versionCheckDone && messageId == _GetVersionString) {
+        // Server protocol check
+        if (messageId == _GetVersionString) {
+            // Assume any version check response means that the server is working
             versionCheckDone = true;
 
             // Now check for auth requests
             c->send(hdl, _getAuthRequiredJSONString().c_str(), websocketpp::frame::opcode::text);
-        } else if (!authRequiredCheckDone && messageId == _AuthRequiredString) {
-            if (authRequired = d["authRequired"].GetBool()) {
+            return;
+
+            // Auth require check
+        } else if (messageId == _AuthRequiredString) {
+            if (d["authRequired"].GetBool()) {
+                if (false /* password empty */) {
+                    c->close(hdl, websocketpp::close::status::invalid_subprotocol_data, "Password required and was not supplied");
+                }
+
                 c->send(hdl, _generateAuthJSONString("password", d["challenge"].GetString(), d["salt"].GetString()).c_str(), websocketpp::frame::opcode::text);
             }
+
+            return;
+
+            // Auth response check
+        } else if (messageId == _AuthenticateString) {
+            if (!(std::string(d["status"].GetString()) == "ok")) {
+                c->close(hdl, websocketpp::close::status::invalid_subprotocol_data, "Supplied password was incorrect");
+            }
+
+            return;
         }
     }
 
@@ -62,7 +76,6 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
 
     std::string updateType(d["update-type"].GetString());
 
-    c->get_alog().write(websocketpp::log::alevel::app, payload);
     // Only handle SwitchScenes and PreviewSceneChanged events
     // TODO: Maybe also handle the transition ones
     if (updateType != "SwitchScenes" && updateType != "PreviewSceneChanged") {
@@ -76,7 +89,6 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
     rapidjson::Writer<rapidjson::StringBuffer> writer(message);
     d.Accept(writer);
     c->get_alog().write(websocketpp::log::alevel::app, message.GetString());
-    // c->close(hdl, websocketpp::close::status::normal, "");
 }
 
 int main() {
