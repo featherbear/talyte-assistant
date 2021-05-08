@@ -9,11 +9,13 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
 
-add_executable(talyte-assistant src/client.cpp)
+add_executable(talyte-assistant src/client.cpp src/protoTools.cpp libs/cpp-base64/base64.cpp)
 
 target_include_directories(talyte-assistant PUBLIC "./libs/websocketpp")
 target_include_directories(talyte-assistant PUBLIC "./libs/asio/asio/include")
 target_include_directories(talyte-assistant PUBLIC "./libs/rapidjson/include")
+target_include_directories(talyte-assistant PUBLIC "./libs/cpp-base64")
+target_include_directories(talyte-assistant PUBLIC "./libs/PicoSHA2")
 
 if (WIN32)
     target_include_directories(talyte-assistant PUBLIC "./libs/mingw-std-threads")

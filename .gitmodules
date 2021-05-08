@@ -10,3 +10,12 @@
 [submodule "libs/rapidjson"]
 	path = libs/rapidjson
 	url = https://github.com/Tencent/rapidjson/
+[submodule "libs/cpp-base64"]
+	path = libs/cpp-base64
+	url = https://github.com/ReneNyffenegger/cpp-base64
+[submodule "libs/hash-library"]
+	path = libs/hash-library
+	url = https://github.com/stbrumme/hash-library
+[submodule "libs/PicoSHA2"]
+	path = libs/PicoSHA2
+	url = https://github.com/okdshin/PicoSHA2
