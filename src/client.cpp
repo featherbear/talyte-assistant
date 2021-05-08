@@ -42,8 +42,6 @@ void on_client_connect(ServerType* s, websocketpp::connection_hdl hdl) {
 }
 
 void on_client_disconnect(ServerType* s, websocketpp::connection_hdl hdl) {
-    std::cout << "disconnect:" << hdl.lock() << std::endl;
-
     connections_mutex.lock();
 
     bool found = false;
@@ -139,12 +137,14 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
 int main() {
     // TODO: Variable uri
     std::string uri = "ws://localhost:4444";
+    int port = 4443;
 
     // Shared async IO service
     asio::io_service async_service;
 
     try {
-        c.set_access_channels(websocketpp::log::alevel::connect | websocketpp::log::alevel::disconnect);
+        c.clear_access_channels(websocketpp::log::alevel::all);
+        c.set_access_channels(websocketpp::log::alevel::connect | websocketpp::log::alevel::disconnect | websocketpp::log::alevel::app);
         // c.set_error_channels(websocketpp::log::elevel::none);
 
         c.init_asio(&async_service);
@@ -157,6 +157,8 @@ int main() {
 
         websocketpp::lib::error_code ec;
         ClientType::connection_ptr con = c.get_connection(uri, ec);
+
+        c.get_alog().write(websocketpp::log::alevel::app, std::string("Relay connecting to ") + uri);
         c.connect(con);
 
     } catch (websocketpp::lib::error_code e) {
@@ -168,7 +170,8 @@ int main() {
     }
 
     try {
-        s.set_access_channels(websocketpp::log::alevel::connect | websocketpp::log::alevel::disconnect);
+        s.clear_access_channels(websocketpp::log::alevel::all);
+        s.set_access_channels(websocketpp::log::alevel::connect | websocketpp::log::alevel::disconnect | websocketpp::log::alevel::app);
         s.set_error_channels(websocketpp::log::elevel::none);
 
         s.init_asio(&async_service);
@@ -176,7 +179,8 @@ int main() {
         s.set_close_handler(websocketpp::lib::bind(&on_client_disconnect, &s, std::placeholders::_1));
 
         // TODO: Variable port number
-        s.listen(4443);
+        s.listen(port);
+        s.get_alog().write(websocketpp::log::alevel::app, std::string("Server is listening on port ") + std::to_string(port));
 
         s.start_accept();
     } catch (websocketpp::lib::error_code e) {
@@ -188,5 +192,6 @@ int main() {
     }
 
     async_service.run();
+
     return 0;
 }
