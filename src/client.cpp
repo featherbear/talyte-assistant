@@ -19,6 +19,9 @@ typedef websocketpp::client<websocketpp::config::asio_client> ClientType;
 typedef websocketpp::server<websocketpp::config::asio> ServerType;
 typedef websocketpp::config::asio_client::message_type::ptr messagePtr;
 
+ClientType c;
+ServerType s;
+
 bool versionCheckDone = false;
 
 void on_open(ClientType* c, websocketpp::connection_hdl hdl) {
@@ -34,12 +37,31 @@ void on_client_connect(ServerType* s, websocketpp::connection_hdl hdl) {
     if (connections.size() == connections.capacity()) {
         connections.reserve(connections.size() + CLIENT_SPACE);
     };
-
     connections.push_back(hdl);
     connections_mutex.unlock();
+}
 
-    std::cout << connections.size();
-    std::cout << "connect" << std::endl;
+void on_client_disconnect(ServerType* s, websocketpp::connection_hdl hdl) {
+    std::cout << "disconnect:" << hdl.lock() << std::endl;
+
+    connections_mutex.lock();
+    
+    bool found = false;
+    unsigned int i = 0;
+    auto target_ptr = hdl.lock();
+    
+    for (auto conn_wptr : connections) {
+        if (conn_wptr.lock() == target_ptr) {
+            found = true;
+            break;
+        }
+        
+        i++;
+    }
+
+    if (found) connections.erase(connections.begin() + i);
+
+    connections_mutex.unlock();
 }
 
 void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) {
@@ -109,15 +131,13 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
 
     for (auto conn : connections) {
         std::cout << "Send" << std::endl;
-        c->send(conn, message.GetString(), websocketpp::frame::opcode::text);
+        s.send(conn, message.GetString(), websocketpp::frame::opcode::text);
     }
 }
 
-ClientType c;
-ServerType s;
-
 int main() {
     std::string uri = "ws://localhost:4444";
+
     asio::io_service async_service;
     asio::io_service::work work(async_service);
 
@@ -154,6 +174,7 @@ int main() {
         s.clear_access_channels(websocketpp::log::alevel::frame_payload);
         s.init_asio(&async_service);
         s.set_open_handler(websocketpp::lib::bind(&on_client_connect, &s, std::placeholders::_1));
+        s.set_close_handler(websocketpp::lib::bind(&on_client_disconnect, &s, std::placeholders::_1));
         s.listen(4443);
         s.start_accept();
 
