@@ -129,10 +129,11 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
     d.Accept(writer);
     c->get_alog().write(websocketpp::log::alevel::app, message.GetString());
 
+    connections_mutex.lock();
     for (auto conn : connections) {
-        std::cout << "Send" << std::endl;
         s.send(conn, message.GetString(), websocketpp::frame::opcode::text);
     }
+    connections_mutex.unlock();
 }
 
 int main() {
