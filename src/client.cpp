@@ -2,9 +2,12 @@
 #define _WEBSOCKETPP_MINGW_THREAD_
 #endif
 
+#define CLIENT_SPACE 50
+
 #define ASIO_STANDALONE
 
 #include <functional>
+#include <mutex>
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
@@ -13,8 +16,7 @@
 #include "protoTools.hpp"
 
 typedef websocketpp::client<websocketpp::config::asio_client> ClientType;
-typedef websocketpp::client<websocketpp::config::asio> ServerType;
-
+typedef websocketpp::server<websocketpp::config::asio> ServerType;
 typedef websocketpp::config::asio_client::message_type::ptr messagePtr;
 
 bool versionCheckDone = false;
@@ -22,6 +24,24 @@ bool versionCheckDone = false;
 void on_open(ClientType* c, websocketpp::connection_hdl hdl) {
     // Check server is the right protocol
     c->send(hdl, _getVersionRequestJSONString(), websocketpp::frame::opcode::text);
+}
+
+std::mutex connections_mutex;
+std::vector<websocketpp::connection_hdl> connections(CLIENT_SPACE);
+
+void on_client_connect(ServerType* s, websocketpp::connection_hdl hdl) {
+    connections_mutex.lock();
+
+    // Create space for another CLIENT_SPACE number of clients
+    if (connections.size() == connections.max_size()) {
+        connections.resize(connections.size() + CLIENT_SPACE);
+    };
+
+    connections.push_back(hdl);
+    connections_mutex.unlock();
+
+    std::cout << connections.size();
+    std::cout << "connect" << std::endl;
 }
 
 void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) {
@@ -73,7 +93,6 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
 
     // Skip results that do not contain `update-type`
     if (!d.HasMember("update-type")) return;
-
     std::string updateType(d["update-type"].GetString());
 
     // Only handle SwitchScenes and PreviewSceneChanged events
@@ -89,12 +108,20 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
     rapidjson::Writer<rapidjson::StringBuffer> writer(message);
     d.Accept(writer);
     c->get_alog().write(websocketpp::log::alevel::app, message.GetString());
+
+    for (auto conn : connections) {
+        std::cout << "Send" << std::endl;
+        c->send(conn, message.GetString(), websocketpp::frame::opcode::text);
+    }
 }
 
-int main() {
-    ClientType c;
+ClientType c;
+ServerType s;
 
+int main() {
     std::string uri = "ws://localhost:4444";
+    asio::io_service async_service;
+    asio::io_service::work work(async_service);
 
     try {
         // set logging policy if needed
@@ -102,8 +129,8 @@ int main() {
         c.clear_access_channels(websocketpp::log::alevel::frame_payload);
         //c.set_error_channels(websocketpp::log::elevel::none);
 
-        // Initialize ASIO
-        c.init_asio();
+        // Initialize ASIO`
+        c.init_asio(&async_service);
 
         // Register our handlers
         c.set_open_handler(websocketpp::lib::bind(&on_open, &c, std::placeholders::_1));
@@ -116,14 +143,30 @@ int main() {
         ClientType::connection_ptr con = c.get_connection(uri, ec);
         c.connect(con);
 
-        // Start the ASIO io_service run loop
-        c.run();
     } catch (websocketpp::lib::error_code e) {
         std::cout << "M" << e.message() << std::endl;
     } catch (const std::exception& e) {
         std::cout << "E" << e.what() << std::endl;
     } catch (...) {
         std::cout << "other exception" << std::endl;
+    }
+
+    try {
+        s.clear_access_channels(websocketpp::log::alevel::frame_header);
+        s.clear_access_channels(websocketpp::log::alevel::frame_payload);
+        s.init_asio(&async_service);
+        s.set_open_handler(websocketpp::lib::bind(&on_client_connect, &s, std::placeholders::_1));
+        s.listen(4443);
+        s.start_accept();
+
+        async_service.run();
+        std::cout << " Run service \n";
+    } catch (websocketpp::lib::error_code e) {
+        std::cout << "S:M" << e.message() << std::endl;
+    } catch (const std::exception& e) {
+        std::cout << "S:E" << e.what() << std::endl;
+    } catch (...) {
+        std::cout << "S:other exception" << std::endl;
     }
     return 0;
 }
