@@ -14,10 +14,6 @@
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/server.hpp>
 
-using websocketpp::lib::bind;
-using websocketpp::lib::placeholders::_1;
-using websocketpp::lib::placeholders::_2;
-
 typedef websocketpp::client<websocketpp::config::asio_client> ClientType;
 typedef websocketpp::client<websocketpp::config::asio> ServerType;
 
@@ -61,7 +57,7 @@ int main() {
         // Register our handlers
         // c.set_open_handler(bind(&on_open, &c, ::_1));
         // c.set_fail_handler(bind(&on_fail, &c, ::_1));
-        c.set_message_handler(bind(&on_message, &c, ::_1, ::_2));
+        c.set_message_handler(websocketpp::lib::bind(&on_message, &c, std::placeholders::_1, std::placeholders::_2));
         // c.set_close_handler(bind(&on_close, &c, ::_1));
 
         // Create a connection to the given URI and queue it for connection once
