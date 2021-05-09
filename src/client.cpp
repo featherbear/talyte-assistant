@@ -148,8 +148,8 @@ int main() {
         // c.set_error_channels(websocketpp::log::elevel::none);
 
         c.init_asio(&async_service);
-        c.set_open_handler(websocketpp::lib::bind(&on_open, &c, std::placeholders::_1));
-        c.set_message_handler(websocketpp::lib::bind(&on_message, &c, std::placeholders::_1, std::placeholders::_2));
+        c.set_open_handler(std::bind(&on_open, &c, std::placeholders::_1));
+        c.set_message_handler(std::bind(&on_message, &c, std::placeholders::_1, std::placeholders::_2));
 
         // TODO: Reconnect
         // c.set_close_handler(bind(&on_close, &c, ::_1));
@@ -175,8 +175,8 @@ int main() {
         s.set_error_channels(websocketpp::log::elevel::none);
 
         s.init_asio(&async_service);
-        s.set_open_handler(websocketpp::lib::bind(&on_client_connect, &s, std::placeholders::_1));
-        s.set_close_handler(websocketpp::lib::bind(&on_client_disconnect, &s, std::placeholders::_1));
+        s.set_open_handler(std::bind(&on_client_connect, &s, std::placeholders::_1));
+        s.set_close_handler(std::bind(&on_client_disconnect, &s, std::placeholders::_1));
 
         // TODO: Variable port number
         s.listen(port);
