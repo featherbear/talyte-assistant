@@ -135,6 +135,8 @@ void on_message(ClientType* c, websocketpp::connection_hdl hdl, messagePtr msg) 
 }
 
 int main() {
+    // TODO: Cache the last program and preview scene to send to a joining client
+    
     // TODO: Variable uri
     std::string uri = "ws://localhost:4444";
     int port = 4443;
